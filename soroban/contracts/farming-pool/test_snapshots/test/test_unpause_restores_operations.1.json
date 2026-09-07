@@ -503,6 +503,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "TotalBankedCredits"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "TotalCredits"
                           }
                         ]

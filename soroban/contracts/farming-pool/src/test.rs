@@ -990,15 +990,18 @@ fn test_get_position_credits_and_get_stake_credits_distinguish_systems() {
 
     advance_ledgers(&t.env, 10);
 
-    // Position credits = 500 * (1 + 0.5 * (2-1)) * 1 * 10 = 7_500
-    assert_eq!(t.client.get_position_credits(&t.user), 7_500);
-    assert_eq!(t.client.calculate_credits(&t.user), 7_500);
+    // Position credits are amount * credit_rate * elapsed with no boost
+    // factor — `boost` only applies to the flexible UserStake system (see
+    // `get_stake_credits`/`get_credits` doc comments).
+    // Position credits = 500 * 1 * 10 = 5_000
+    assert_eq!(t.client.get_position_credits(&t.user), 5_000);
+    assert_eq!(t.client.calculate_credits(&t.user), 5_000);
 
     // Stake credits = 1500 * 1 * 10 = 15_000
     assert_eq!(t.client.get_stake_credits(&t.user), 15_000);
 
-    // Combined get_credits = 7_500 + 15_000 = 22_500
-    assert_eq!(t.client.get_credits(&t.user), 22_500);
+    // Combined get_credits = 5_000 + 15_000 = 20_000
+    assert_eq!(t.client.get_credits(&t.user), 20_000);
 }
 
 // ── lock_assets tests ─────────────────────────────────────────────────────────
@@ -1166,20 +1169,25 @@ fn test_set_global_multiplier_event_reports_previous_value() {
     t.client.set_global_multiplier(&5);
     t.client.set_global_multiplier(&3);
 
-    // The most recent event pairs the just-superseded value (5) with the new
-    // one (3), not the pool's original multiplier.
-    let events = t.env.events().all();
-    let (contract, topics, data) = events.last().unwrap();
-    assert_eq!(contract, t.contract_id);
+    // `events().all()` only reflects the most recent top-level call, so only
+    // the second `set_global_multiplier` invocation's event is present here.
+    // It must pair the just-superseded value (5) with the new one (3), not
+    // the pool's original multiplier (2).
     assert_eq!(
-        topics,
+        t.env.events().all(),
         soroban_sdk::vec![
             &t.env,
-            soroban_sdk::symbol_short!("boost").into_val(&t.env),
-            soroban_sdk::symbol_short!("mult_set").into_val(&t.env)
+            (
+                t.contract_id.clone(),
+                soroban_sdk::vec![
+                    &t.env,
+                    soroban_sdk::symbol_short!("boost").into_val(&t.env),
+                    soroban_sdk::symbol_short!("mult_set").into_val(&t.env)
+                ],
+                (5u32, 3u32).into_val(&t.env),
+            )
         ]
     );
-    assert_eq!(data, (5u32, 3u32).into_val(&t.env));
 }
 
 #[test]

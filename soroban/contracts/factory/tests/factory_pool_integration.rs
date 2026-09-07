@@ -383,7 +383,12 @@ fn factory_with_pool(
     admin: &Address,
     asset: &Address,
     daily_rate: u128,
-) -> (FactoryClient<'static>, FarmingPoolClient<'static>, u32, Address) {
+) -> (
+    FactoryClient<'static>,
+    FarmingPoolClient<'static>,
+    u32,
+    Address,
+) {
     let wasm_hash = env.deployer().upload_contract_wasm(FARMING_POOL_WASM);
     let factory_addr = env.register(Factory, ());
     let factory_client = FactoryClient::new(env, &factory_addr);
@@ -445,7 +450,10 @@ fn total_tvl_tracks_stake_and_lock_after_sync() {
     pool_client.lock_assets(&user, &lock_amount);
 
     // Live read sees the deposits immediately; the accumulator does not.
-    assert_eq!(factory_client.pool_tvl(&pool_id), stake_amount + lock_amount);
+    assert_eq!(
+        factory_client.pool_tvl(&pool_id),
+        stake_amount + lock_amount
+    );
     assert_eq!(factory_client.total_tvl(), 0);
 
     let synced = factory_client.sync_pool_tvl(&pool_id);

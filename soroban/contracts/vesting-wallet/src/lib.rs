@@ -355,6 +355,15 @@ impl VestingWallet {
         Ok(is_revoked(&env))
     }
 
+    /// Return the current beneficiary address. Reflects any prior
+    /// `transfer_beneficiary` calls. Returns `NotInitialized` if the wallet
+    /// has not been initialized.
+    pub fn beneficiary(env: Env) -> Result<Address, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(get_beneficiary(&env))
+    }
+
     /// Return the full vesting schedule parameters in a single call.
     ///
     /// Frontends need `beneficiary`, `token`, `total_amount`, `start_ledger`,

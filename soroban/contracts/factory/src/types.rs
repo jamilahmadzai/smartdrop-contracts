@@ -19,8 +19,6 @@ pub enum DataKey {
     AdminTransferCount,
     /// Running total of successful `upgrade_pool` calls, for version tracking (#258).
     UpgradeCount,
-    /// List of pool IDs for a specific asset.
-    AssetPools(Address),
     /// List of pool IDs created by a specific admin.
     PoolsByAdmin(Address),
     /// List of pool IDs currently running a specific WASM hash.
