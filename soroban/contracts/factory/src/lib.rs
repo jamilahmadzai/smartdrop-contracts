@@ -3,7 +3,8 @@
 mod types;
 
 use soroban_sdk::{
-    contract, contractimpl, symbol_short, vec, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, symbol_short, vec, Address, BytesN, Env, IntoVal, String, Symbol, Val,
+    Vec,
 };
 use types::{DataKey, ListPoolsResponse, PoolRecord, PoolSort};
 
@@ -81,11 +82,9 @@ fn bump_admin_pools(env: &Env, admin: &Address) {
 }
 
 fn bump_pool_tvl(env: &Env, pool_id: u32) {
-    env.storage().persistent().extend_ttl(
-        &DataKey::PoolTvl(pool_id),
-        TTL_THRESHOLD,
-        TTL_EXTEND_TO,
-    );
+    env.storage()
+        .persistent()
+        .extend_ttl(&DataKey::PoolTvl(pool_id), TTL_THRESHOLD, TTL_EXTEND_TO);
 }
 
 fn bump_wasm_pools(env: &Env, wasm_hash: &BytesN<32>) {
@@ -230,7 +229,10 @@ fn read_admin_transfer_count(env: &Env) -> u32 {
 }
 
 fn read_total_tvl(env: &Env) -> i128 {
-    env.storage().instance().get(&DataKey::TotalTvl).unwrap_or(0)
+    env.storage()
+        .instance()
+        .get(&DataKey::TotalTvl)
+        .unwrap_or(0)
 }
 
 fn read_pool_tvl(env: &Env, pool_id: u32) -> i128 {
@@ -917,11 +919,7 @@ impl Factory {
     /// `refresh_pool_ttls`.
     ///
     /// Returns `NotInitialized` if the factory has not been initialized.
-    pub fn sync_all_pool_tvls(
-        env: Env,
-        start_id: u32,
-        limit: u32,
-    ) -> Result<u32, FactoryError> {
+    pub fn sync_all_pool_tvls(env: Env, start_id: u32, limit: u32) -> Result<u32, FactoryError> {
         require_initialized(&env)?;
         bump_instance(&env);
         let count: u32 = env
@@ -1064,7 +1062,10 @@ impl Factory {
         require_initialized(&env)?;
         let admin = load_admin(&env)?;
         // Reject a zero-address admin before any auth checks to avoid misleading Unauthorized errors.
-        let zero_admin = Address::from_string(&String::from_str(&env, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF"));
+        let zero_admin = Address::from_string(&String::from_str(
+            &env,
+            "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+        ));
         if admin == zero_admin {
             return Err(FactoryError::InvalidAdmin);
         }

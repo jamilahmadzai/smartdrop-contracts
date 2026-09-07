@@ -297,6 +297,33 @@
               "key": {
                 "vec": [
                   {
+                    "symbol": "TotalCreditsEarned"
+                  },
+                  {
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "i128": "10000"
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 1036810
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+              "key": {
+                "vec": [
+                  {
                     "symbol": "UserStake"
                   },
                   {
@@ -374,6 +401,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "ActiveStakeCount"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "u32": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "Admin"
                           }
                         ]
@@ -392,6 +431,18 @@
                       },
                       "val": {
                         "i128": "3"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "CreditRateChangeCount"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "u32": 1
                       }
                     },
                     {
@@ -464,6 +515,18 @@
                       },
                       "val": {
                         "u32": 1
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "TotalBankedCredits"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "10000"
                       }
                     },
                     {

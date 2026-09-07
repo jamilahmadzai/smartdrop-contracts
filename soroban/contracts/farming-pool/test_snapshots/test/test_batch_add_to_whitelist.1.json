@@ -769,6 +769,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "ActiveStakeCount"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "u32": 3
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "Admin"
                           }
                         ]
@@ -859,6 +871,18 @@
                       },
                       "val": {
                         "u32": 3
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "TotalBankedCredits"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "i128": "0"
                       }
                     },
                     {

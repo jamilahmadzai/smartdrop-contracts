@@ -436,7 +436,9 @@ fn add_total_banked_credits(env: &Env, amount: i128) {
     let total = read_total_banked_credits(env);
     env.storage().instance().set(
         &DataKey::TotalBankedCredits,
-        &total.checked_add(amount).expect("total banked credits overflow"),
+        &total
+            .checked_add(amount)
+            .expect("total banked credits overflow"),
     );
 }
 
@@ -444,7 +446,9 @@ fn subtract_total_banked_credits(env: &Env, amount: i128) {
     let total = read_total_banked_credits(env);
     env.storage().instance().set(
         &DataKey::TotalBankedCredits,
-        &total.checked_sub(amount).expect("total banked credits underflow"),
+        &total
+            .checked_sub(amount)
+            .expect("total banked credits underflow"),
     );
 }
 
@@ -455,10 +459,16 @@ fn read_total_credits_earned(env: &Env, user: &Address) -> i128 {
 
 fn add_total_credits_earned(env: &Env, user: &Address, amount: i128) {
     let key = DataKey::TotalCreditsEarned(user.clone());
-    let total = env.storage().persistent().get::<DataKey, i128>(&key).unwrap_or(0);
+    let total = env
+        .storage()
+        .persistent()
+        .get::<DataKey, i128>(&key)
+        .unwrap_or(0);
     env.storage().persistent().set(
         &key,
-        &total.checked_add(amount).expect("user lifetime credits overflow"),
+        &total
+            .checked_add(amount)
+            .expect("user lifetime credits overflow"),
     );
     bump_user(env, &key);
 }
@@ -722,7 +732,7 @@ fn checkpoint(env: &Env, user: &Address, stake: &mut UserStake) {
     }
 }
 
-fn checkpoint_position(env: &Env, _user: &Address, position: &mut Position) {
+fn checkpoint_position(env: &Env, user: &Address, position: &mut Position) {
     let current = env.ledger().sequence();
     let elapsed = current.saturating_sub(position.checkpoint_ledger);
     let delta = position.amount * position.credit_rate * elapsed as i128;
