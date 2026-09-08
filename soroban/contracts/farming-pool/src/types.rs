@@ -20,6 +20,8 @@ pub enum PoolError {
     Paused = 10,
     /// Returned by `accept_admin` when no admin handoff is pending.
     NoPendingAdmin = 11,
+    /// Returned by `batch_add_to_whitelist` or `batch_remove_from_whitelist` when batch exceeds 50 users.
+    BatchTooLarge = 12,
 }
 
 /// Per-user boost configuration returned by `get_boost_config`.
@@ -108,6 +110,35 @@ pub enum DataKey {
     TotalStaked,
     /// Cumulative credits committed to users since pool initialization.
     TotalDistributedCredits,
+    StakedUserCount,
+    /// Running count of total lock operations performed.
+    LockCount,
+    /// Running count of total unstake operations performed.
+    UnstakeCount,
+    TotalCredits,
+    EmergencyWithdrawalCount,
+    /// Running count of active stakes.
+    ActiveStakeCount,
+    /// Running count of credit rate updates performed.
+    CreditRateChangeCount,
+    /// Running count of `set_boost` calls performed (#230).
+    BoostCount,
+    /// Total tokens currently locked in time-locked `Position`s (#232).
+    TotalLocked,
+    /// Running total of all tokens deposited into the pool via `stake` and `lock_assets`.
+    TotalDeposits,
+    /// Running total of all tokens withdrawn from the pool via `unstake`,
+    /// `unlock_assets`, and `emergency_withdraw`.
+    TotalWithdrawals,
+    /// Sum of every user's current boost `allocation_pct`, tracked incrementally
+    /// as `set_boost` calls change each user's allocation.
+    TotalBoostAlloc,
+    /// Count of users with a non-zero boost allocation currently set.
+    BoostUserCount,
+    /// Aggregate of credits currently banked across all users.
+    TotalBankedCredits,
+    /// Cumulative credits earned by a user across their entire lifetime.
+    TotalCreditsEarned(Address),
 }
 
 /// Paginated response for `get_whitelisted_users`.

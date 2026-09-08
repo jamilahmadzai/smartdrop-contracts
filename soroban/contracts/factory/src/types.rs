@@ -1,4 +1,4 @@
-use soroban_sdk::{contracterror, contracttype, Address, Vec};
+use soroban_sdk::{contracterror, contracttype, Address, BytesN, Vec};
 
 /// Storage keys used by the factory contract.
 #[contracttype]
@@ -13,6 +13,22 @@ pub enum DataKey {
     Pool(u32),
     /// Flag indicating if pool creation is currently paused.
     PoolCreationPaused,
+    /// Pool IDs matching a specific asset address.
+    AssetPools(Address),
+    /// Running count of admin transfers performed.
+    AdminTransferCount,
+    /// Running total of successful `upgrade_pool` calls, for version tracking (#258).
+    UpgradeCount,
+    /// List of pool IDs created by a specific admin.
+    PoolsByAdmin(Address),
+    /// List of pool IDs currently running a specific WASM hash.
+    PoolsByWasmHash(BytesN<32>),
+    /// Aggregate value locked across every pool, maintained incrementally by
+    /// `sync_pool_tvl` so `total_tvl` is an O(1) read (#249).
+    TotalTvl,
+    /// Last-synced TVL for a single pool, keyed by pool ID. This is the term
+    /// currently folded into `TotalTvl` for that pool (#249).
+    PoolTvl(u32),
 }
 
 /// On-chain record for a registered farming pool.
@@ -110,10 +126,20 @@ pub enum FactoryError {
     /// `upgrade_pool` failed because the target pool does not support upgrades
     /// (e.g. older deployment without upgrade/admin entry points) or the upgrade call failed.
     PoolUpgradeFailed = 10,
-        /// `create_pool`'s asset does not respond as a valid token contract.
+    /// `create_pool`'s asset does not respond as a valid token contract.
     InvalidAsset = 11,
     /// `create_pool`'s minimum stake is below the protocol dust threshold.
     InvalidMinStakeAmount = 12,
     /// `create_pool` was called while pool creation is paused.
     PoolCreationPaused = 13,
+    /// `set_pool_wasm_hash` or `initialize` was called with an all-zero WASM hash.
+    InvalidWasmHash = 14,
+    /// `create_pool`'s minimum lock period is below the minimum allowed threshold.
+    MinLockPeriodTooShort = 15,
+    /// `initialize` was called with a zero-address admin, which would permanently lock the factory.
+    InvalidAdmin = 16,
+    /// A pool's TVL could not be read during `total_tvl` maintenance because the
+    /// deployed pool did not answer the `total_staked` getter (e.g. a pool
+    /// deployed from an older WASM that predates it).
+    PoolQueryFailed = 17,
 }

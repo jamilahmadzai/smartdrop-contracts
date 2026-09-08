@@ -82,6 +82,20 @@ fn is_revoked(env: &Env) -> bool {
         .unwrap_or(false)
 }
 
+fn read_release_count(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::ReleaseCount)
+        .unwrap_or(0)
+}
+
+fn increment_release_count(env: &Env) {
+    let count = read_release_count(env);
+    env.storage()
+        .instance()
+        .set(&DataKey::ReleaseCount, &(count + 1));
+}
+
 // ── Vesting formula ───────────────────────────────────────────────────────────
 
 /// Linear vesting with cliff.
@@ -203,6 +217,7 @@ impl VestingWallet {
             &total_amount,
         );
 
+        #[allow(deprecated)]
         env.events().publish(
             (symbol_short!("vest"), symbol_short!("init")),
             (beneficiary, token, total_amount, start_ledger, end_ledger),
@@ -214,11 +229,15 @@ impl VestingWallet {
 
     /// Transfer all vested-but-unclaimed tokens to the beneficiary.
     ///
-    /// Permissionless: tokens always flow to the stored beneficiary address.
+    /// Requires beneficiary authorization so third parties cannot force-release
+    /// tokens at unexpected times (e.g. tax events).
     /// Returns the amount transferred (0 if nothing is releasable).
     pub fn release(env: Env) -> Result<i128, VestingError> {
         require_initialized(&env)?;
         bump_instance(&env);
+
+        let beneficiary = get_beneficiary(&env);
+        beneficiary.require_auth();
 
         let vested = compute_vested(&env)?;
         let released = get_released(&env);
@@ -228,11 +247,12 @@ impl VestingWallet {
             return Ok(0);
         }
 
+        increment_release_count(&env);
+
         env.storage()
             .instance()
             .set(&DataKey::ReleasedAmount, &(released + releasable));
 
-        let beneficiary = get_beneficiary(&env);
         token::TokenClient::new(&env, &get_token(&env)).transfer(
             &env.current_contract_address(),
             &beneficiary,
@@ -242,7 +262,7 @@ impl VestingWallet {
         #[allow(deprecated)]
         env.events().publish(
             (symbol_short!("vest"), symbol_short!("released")),
-            (beneficiary, releasable),
+            (beneficiary, releasable, released + releasable),
         );
 
         Ok(releasable)
@@ -291,7 +311,7 @@ impl VestingWallet {
         #[allow(deprecated)]
         env.events().publish(
             (symbol_short!("vest"), symbol_short!("revoked")),
-            (funder, vested, unvested),
+            (admin, get_beneficiary(&env), vested, unvested),
         );
 
         Ok(())
@@ -318,6 +338,32 @@ impl VestingWallet {
         Ok(compute_vested(&env)? - get_released(&env))
     }
 
+    /// Return whether the vesting schedule is revocable by admin.
+    pub fn revocable(env: Env) -> Result<bool, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(is_revocable(&env))
+    }
+
+    /// Return whether the vesting schedule has already been revoked (#235).
+    ///
+    /// Lets frontends check revocation status directly instead of inferring
+    /// it from a failed `revoke()` call.
+    pub fn revoked(env: Env) -> Result<bool, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(is_revoked(&env))
+    }
+
+    /// Return the current beneficiary address. Reflects any prior
+    /// `transfer_beneficiary` calls. Returns `NotInitialized` if the wallet
+    /// has not been initialized.
+    pub fn beneficiary(env: Env) -> Result<Address, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(get_beneficiary(&env))
+    }
+
     /// Return the full vesting schedule parameters in a single call.
     ///
     /// Frontends need `beneficiary`, `token`, `total_amount`, `start_ledger`,
@@ -338,6 +384,19 @@ impl VestingWallet {
         })
     }
 
+    /// Returns `(start_ledger, cliff_ledger, end_ledger)` in a single read for
+    /// frontends that render the vesting schedule (#256). Returns
+    /// `NotInitialized` if the wallet has not been initialized.
+    pub fn vesting_dates(env: Env) -> Result<(u32, u32, u32), VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok((
+            get_start_ledger(&env),
+            get_cliff_ledger(&env),
+            get_end_ledger(&env),
+        ))
+    }
+
     /// Emergency recovery that deliberately bypasses vesting arithmetic.
     ///
     /// Admin-only. Transfers the wallet's raw token balance to the admin and
@@ -352,10 +411,11 @@ impl VestingWallet {
         bump_instance(&env);
 
         let token = get_token(&env);
-        let amount = token::TokenClient::new(&env, &token)
-            .balance(&env.current_contract_address());
+        let amount = token::TokenClient::new(&env, &token).balance(&env.current_contract_address());
         env.storage().instance().set(&DataKey::Revoked, &true);
-        env.storage().instance().set(&DataKey::RevokedVested, &0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::RevokedVested, &0i128);
 
         if amount > 0 {
             token::TokenClient::new(&env, &token).transfer(
@@ -368,10 +428,7 @@ impl VestingWallet {
     }
 
     /// Transfer beneficiary rights to `new_beneficiary`. Admin must authorise.
-    pub fn transfer_beneficiary(
-        env: Env,
-        new_beneficiary: Address,
-    ) -> Result<(), VestingError> {
+    pub fn transfer_beneficiary(env: Env, new_beneficiary: Address) -> Result<(), VestingError> {
         require_initialized(&env)?;
         let admin = get_admin(&env);
         admin.require_auth();
@@ -382,6 +439,13 @@ impl VestingWallet {
             .set(&DataKey::Beneficiary, &new_beneficiary);
 
         Ok(())
+    }
+
+    /// Return the token address for the vesting schedule.
+    pub fn token(env: Env) -> Result<Address, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(get_token(&env))
     }
 
     /// Return the current admin address.
@@ -407,6 +471,17 @@ impl VestingWallet {
         );
 
         Ok(())
+    }
+
+    /// Return the total number of release operations performed.
+    pub fn release_count(env: Env) -> Result<u32, VestingError> {
+        require_initialized(&env)?;
+        bump_instance(&env);
+        Ok(read_release_count(&env))
+    }
+
+    pub fn get_release_count(env: Env) -> Result<u32, VestingError> {
+        Self::release_count(env)
     }
 }
 

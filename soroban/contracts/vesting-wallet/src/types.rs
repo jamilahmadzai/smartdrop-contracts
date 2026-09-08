@@ -38,6 +38,8 @@ pub enum DataKey {
     Revoked,
     /// Vested amount frozen at the moment of revocation.
     RevokedVested,
+    /// Running count of release operations performed.
+    ReleaseCount,
 }
 
 /// Emitted when admin rights are transferred.
